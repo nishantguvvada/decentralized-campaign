@@ -1,0 +1,147 @@
+Campaign
+
+Traditional Approach:
+- A manager sets up a campaign
+- Contributors (backers) fund the campaign
+- Manager directs the funds to vendors to accomplish campaign goals
+- Manager gifts something to backers
+
+Issue: It is easy for the manager to take away all the funds for personal gains
+
+Blockchain Approach:
+- A manager sets up a campaign
+- Contributors fund the campaign
+- Manager creates spending request to withdraw money and send to an external address
+- Contributors vote on the spending request
+
+
+Variables:
+
+1. Manager: address of campaign manager
+2. minimumContribution: Minimum donation required to be a contributor
+3. approvers[]: List of addresses who donated money
+4. requests[]: List of requests that the manager has created
+
+Functions:
+- campaign: constructor function that sets minimumContribution and the owner
+- contribute: donate money
+- createRequest: create spending request
+- approveRequest: vote on request
+- finalizeRequest: send money after approval
+
+Voting:
+1. One vote per contributor
+2. Recilient to many contributors
+
+WRONG WAY to design VOTING SYSTEM:
+
+we will have any array of addresses of voters within the Request struct
+
+    function approveRequest(Request request) public {
+        // Make sure person calling this function has donated
+        bool isApprover = false;
+        for (uint i = 0; i < approvers.length; i++) {
+            if (approvers[i] == msg.sender) {
+                isApprover = true;
+            }
+        }
+        require(isApprover);
+
+        // Make sure person calling this function hasn't voted before
+        for (uint i = 0; i < request.approvers.length;; i++) {
+            require(request.approvers[i] != msg.sender); // we will have any array of addresses of voters within the Request struct
+        }
+    }
+
+Gas cost scales up exponentially
+
+RIGHT WAY:
+
+use mapping = collection of key value pairs
+
+
+DEPLOYMENT:
+
+We always deploy an instance of the contract to the network (blockchain)
+
+We need to display multiple campaigns on our frontend (website). In order to display all the created campaigns, we need to know the addresses of each of the campaigns (contracts) deployed to the network.
+
+Solution 1: User clicks "create campaign" -> we send user the contract source code -> user deploys and gets address back -> user sends us address of the newly deployed contract/campaign -> we publish on our site
+
+Issue: Sending the contract source code to the user is dangerous.
+
+Solution 2: User clicks "create campaign" -> we deploy a new campaign and get address back -> we publish new campaign on the site
+
+Issue: Creating contracts costs
+
+We need a hybrid approach!
+
+One contract deploys instances of another contract. "Factory" contract has a function to deploy a new instance of "Campaign". User pays for the cost of creating a new instance of the "Campaign". A list of all the deployed campaigns are stored in the "Factory" contract.
+
+CampaignFactory Contract:
+
+Variables:
+deployedCampaigns: address[]: addresses of all deployed campaigns
+
+Functions:
+createCampaign: deploys a new instance of Campaign contract and stores the returned address
+getDeployedCampaigns: returns a list of all deployed campaigns
+
+
+npm install fs-extra ganache mocha web3 solc@0.4.17
+
+ethereum folder -> build + contracts
+
+A better compile.js performs the following steps:
+- Delete the entire "build" folder
+- Read Campaign.sol from contracts folder
+- Compile contracts with solidity compiler
+- Write output to a new "build" folder
+
+Deployed from address : 0x241DeF622337146443A51D658309ECE06ef51ACE
+Contract deployed to 0x0083F24b8dF7B4B2fCE531c02944d6C103fb5139
+
+FRONTEND: NextJS
+
+Routing:
+/ = List of campaigns
+/campaigns/new = Form to make a campaign
+/campaigns/0x8147 = Campaign details for campaign at address 0x8147
+/campaigns/0x8147/requests = Requests for campaign at address 0x8147
+/campaigns/0x8147/requests/new = Form to create a request for campaign at address 0x8147
+
+npm install next@12 react react-dom
+
+Routing in NextJS : filenames within "pages" directory are converted to routes. (index.js is the / route)
+
+Building the Campaign List Page:
+- Configure web3 with a provider
+- Tell web3 that a deployed copy of CampaignFactory exists
+- Use instance of deployed CampaignFactory to retrieve a list of deployed campaigns
+- Use React to show details of each deployed campaign
+
+factory.js => defining instance of the CampaignFactory contract
+web3.js => using web3 injected with metamask accounts
+
+
+To hijack web3 injected by metamask in the browser:
+
+import Web3 from "web3";
+ 
+window.ethereum.request({ method: "eth_requestAccounts" });
+ 
+const web3 = new Web3(window.ethereum);
+ 
+export default web3;
+
+
+NOTE : window.web3 is deprecated. Easier way is to use @metamask/detect-provider npm package
+
+USE semantic-ui-react
+
+npm install next-routes --legacy-peer-deps (helper module to support dynamic routing)
+
+NAVIGATION IN NEXTJS
+
+create server.js and routes.js
+in package.json change "dev": "next dev" to "node server.js"
